@@ -1,0 +1,3 @@
+#!/bin/bash
+# 升级：重新部署脚本并刷新定时任务（幂等）
+exec "$(dirname "$0")/install_callback"

@@ -1,0 +1,3 @@
+#!/bin/bash
+# 配置向导提交：更新更换时间，可选立即应用（复用安装逻辑，幂等）
+exec "$(dirname "$0")/install_callback"

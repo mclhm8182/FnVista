@@ -1,0 +1,16 @@
+#!/bin/bash
+# 安装前检查：飞牛环境 + 依赖
+LOG="${TRIM_TEMP_LOGFILE:-/tmp/fnos-bing-wallpaper-install.log}"
+
+err() { echo "[$(date '+%F %T')] [install_init] $*" >> "$LOG"; }
+
+[ -d /usr/trim/www/static/bg ] || { err "未找到 /usr/trim/www/static/bg，请确认这是飞牛 fnOS 系统"; exit 1; }
+
+command -v curl >/dev/null 2>&1 || { err "缺少 curl，请先安装 curl 后重试"; exit 1; }
+
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  err "缺少 ffmpeg。请先在 SSH 执行: sudo apt update && sudo apt install -y ffmpeg ，然后重试安装"
+  exit 1
+fi
+
+exit 0

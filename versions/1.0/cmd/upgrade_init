@@ -1,0 +1,3 @@
+#!/bin/bash
+# 升级前检查（与安装一致）
+exec "$(dirname "$0")/install_init"

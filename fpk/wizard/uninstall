@@ -1,0 +1,17 @@
+[
+  {
+    "stepTitle": "卸载选项",
+    "items": [
+      {
+        "type": "switch",
+        "field": "wizard_restore",
+        "label": "恢复飞牛系统原始壁纸",
+        "initValue": "true"
+      },
+      {
+        "type": "tips",
+        "helpText": "卸载会删除定时任务和已安装的脚本。壁纸缓存与系统原图备份保留在 /var/lib/fnos-wallpaper，确认不需要可手动删除。"
+      }
+    ]
+  }
+]

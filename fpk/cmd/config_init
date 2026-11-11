@@ -1,0 +1,5 @@
+#!/bin/bash
+# 配置向导前置
+LOG="${TRIM_TEMP_LOGFILE:-/tmp/fnos-bing-wallpaper-config.log}"
+echo "[$(date '+%F %T')] [config_init] begin" >> "$LOG"
+exit 0

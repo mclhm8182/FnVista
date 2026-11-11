@@ -1,0 +1,5 @@
+#!/bin/bash
+# 卸载前检查
+LOG="${TRIM_TEMP_LOGFILE:-/tmp/fnos-bing-wallpaper-uninstall.log}"
+echo "[$(date '+%F %T')] [uninstall_init] begin" >> "$LOG"
+exit 0

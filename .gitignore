@@ -1,0 +1,4 @@
+.DS_Store
+*.fpk
+!dist/*.fpk
+fnpack

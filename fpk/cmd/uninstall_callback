@@ -1,0 +1,53 @@
+#!/bin/bash
+# 卸载：可选恢复原始壁纸，删除定时任务与脚本
+set -uo pipefail
+
+LOG="${TRIM_TEMP_LOGFILE:-/tmp/fnos-bing-wallpaper-uninstall.log}"
+
+CRON_FILE="/etc/cron.d/fnos-bing-wallpaper"
+SET_BIN="/usr/local/sbin/fnos-wallpaper-set.sh"
+DAILY_BIN="/usr/local/sbin/bing-wallpaper-daily.sh"
+
+err() { echo "[$(date '+%F %T')] [uninstall_callback] $*" >> "$LOG"; }
+ok()  { echo "[$(date '+%F %T')] [uninstall_callback] $*" >> "$LOG"; }
+
+# ---------- 1. 恢复原始壁纸（可选，向导默认开启） ----------
+case "${wizard_restore:-true}" in
+  true|1|True|TRUE|on|On|ON)
+    if [ -x "$SET_BIN" ]; then
+      if bash "$SET_BIN" --restore >> "$LOG" 2>&1; then
+        ok "已恢复系统原始壁纸"
+      else
+        err "恢复原始壁纸失败（可能没有备份），备份目录: /var/lib/fnos-wallpaper/orig"
+      fi
+    fi
+    ;;
+  *)
+    ok "按用户选择保留当前壁纸（文件锁仍生效，可用 sudo $SET_BIN --restore 手动还原）"
+    # 保留选择时必须先解锁，否则系统升级可能受影响
+    CHATTR=""
+    for c in /usr/bin/chattr /usr/bin/chattrx /usr/sbin/chattr /sbin/chattr; do
+      [ -x "$c" ] && { CHATTR="$c"; break; }
+    done
+    [ -n "$CHATTR" ] && "$CHATTR" -ai /usr/trim/www/static/bg/wallpaper-1.webp /usr/trim/www/static/thumbnail_bg/wallpaper-1.webp 2>/dev/null
+    ;;
+esac
+
+# ---------- 2. 停掉轮播守护进程，再删除定时任务与全部运行时脚本 ----------
+# v1.5.5: 守护进程是常驻的，光删 cron 不会停；必须先杀掉，否则它会一直
+# 每分钟尝试调用已被删除的 set.sh，日志里刷一堆失败。
+pkill -f 'fnos-wallpaper-rotate.sh --daemon' >/dev/null 2>&1 || true
+rm -f /var/lib/fnos-wallpaper/.rotate-daemon.lock \
+      /var/lib/fnos-wallpaper/.rotate.lock \
+      /var/lib/fnos-wallpaper/force.status \
+      /var/lib/fnos-wallpaper/force.out 2>/dev/null
+
+rm -f "$CRON_FILE" "$DAILY_BIN" "$SET_BIN" \
+      /usr/local/sbin/fnos-wallpaper-watchdog.sh \
+      /usr/local/sbin/fnos-cron-update.sh \
+      /usr/local/sbin/fnos-wallpaper-rotate.sh \
+      /usr/local/sbin/fnos-www-zip-patch.sh \
+      /usr/local/sbin/fnos-survival-check.sh
+ok "已停止轮播守护进程并删除定时任务与运行时脚本"
+
+exit 0

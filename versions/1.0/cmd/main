@@ -1,0 +1,70 @@
+#!/bin/bash
+# main: 应用中心 启动/停止/状态
+#   start  重建定时任务并应用今日壁纸（幂等）
+#   stop   移除定时任务并恢复系统原始壁纸
+#   status cron 就绪且任务存在 -> 0；否则 -> 3
+set -uo pipefail
+
+CRON_FILE="/etc/cron.d/fnos-bing-wallpaper"
+DAILY_BIN="/usr/local/sbin/bing-wallpaper-daily.sh"
+SET_BIN="/usr/local/sbin/fnos-wallpaper-set.sh"
+CRON_UPDATE_BIN="/usr/local/sbin/fnos-cron-update.sh"
+STATE_DIR="/var/lib/fnos-wallpaper"
+LOG="${TRIM_TEMP_LOGFILE:-/tmp/fnos-bing-wallpaper-main.log}"
+
+err() { echo "[$(date '+%F %T')] [main] $*" >> "$LOG"; }
+
+# cron 统一由 fnos-cron-update.sh 重建（daily + watchdog + 轮播三行）
+write_cron() {
+  if [ -x "$CRON_UPDATE_BIN" ]; then
+    bash "$CRON_UPDATE_BIN" || err "cron 重建失败"
+  else
+    # 兜底：cron-update 脚本缺失时按最小形态重建（不含轮播行）
+    local rt="07:00"
+    [ -f "$STATE_DIR/run_time" ] && rt="$(cat "$STATE_DIR/run_time" 2>/dev/null)"
+    printf '%s' "$rt" | grep -qE '^([01][0-9]|2[0-3]):[0-5][0-9]$' || rt="07:00"
+    local h m
+    h=$((10#${rt%%:*})); m=$((10#${rt##*:}))
+    cat > "$CRON_FILE" <<EOF
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+$m $h * * * root $DAILY_BIN >/dev/null 2>&1
+EOF
+    chmod 644 "$CRON_FILE"
+  fi
+}
+
+case "${1:-}" in
+  start)
+    [ -x "$DAILY_BIN" ] || { err "找不到 $DAILY_BIN，应用可能未正确安装"; exit 1; }
+    write_cron
+    systemctl enable --now cron >/dev/null 2>&1 || err "cron 服务未能启动"
+    # 升级/异常存活自检：恢复 cron 与轮播守护进程（开机自校）
+    SURVIVAL_BIN="/usr/local/sbin/fnos-survival-check.sh"
+    [ -x "$SURVIVAL_BIN" ] && bash "$SURVIVAL_BIN" >> "$LOG" 2>&1 || true
+    # 幂等应用：同一天已应用会自动跳过
+    bash "$DAILY_BIN" >> "$LOG" 2>&1 || err "应用壁纸失败（多为网络原因），详见 /var/log/fnos-bing-wallpaper.log"
+    exit 0
+    ;;
+  stop)
+    rm -f "$CRON_FILE"
+    # v1.5.5: 轮播是常驻进程，删 cron 不会停，必须显式结束
+    pkill -f 'fnos-wallpaper-rotate.sh --daemon' >/dev/null 2>&1 || true
+    rm -f "$STATE_DIR/.rotate-daemon.lock" "$STATE_DIR/.rotate.lock" 2>/dev/null
+    # 清掉幂等标记：stop 已恢复原始壁纸，start 时需要重新应用
+    rm -f "$STATE_DIR/last_startdate"
+    if [ -x "$SET_BIN" ]; then
+      bash "$SET_BIN" --restore >> "$LOG" 2>&1 || err "恢复原始壁纸失败"
+    fi
+    exit 0
+    ;;
+  status)
+    if [ -f "$CRON_FILE" ] && systemctl is-active cron >/dev/null 2>&1; then
+      exit 0
+    fi
+    exit 3
+    ;;
+  *)
+    exit 1
+    ;;
+esac

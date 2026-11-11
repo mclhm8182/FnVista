@@ -1,0 +1,46 @@
+name: Release fpk
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download fnpack 1.2.3 (official)
+        run: |
+          curl -fsSL --retry 3 -o fnpack \
+            https://static2.fnnas.com/fnpack/fnpack-1.2.3-linux-amd64
+          chmod +x fnpack
+          ./fnpack --help
+
+      - name: Build fpk (platform=all, 单包兼容 x86 + arm)
+        run: |
+          ./fnpack build --directory fpk
+          # fnpack 把产物输出到当前工作目录
+          mv -v fnos-bing-wallpaper.fpk "dist/fnos-bing-wallpaper.fpk"
+          sha256sum "dist/fnos-bing-wallpaper.fpk" > "dist/fnos-bing-wallpaper.fpk.sha256"
+          cat "dist/fnos-bing-wallpaper.fpk.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fnos-bing-wallpaper-fpk
+          path: dist/*
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/fnos-bing-wallpaper.fpk
+            dist/fnos-bing-wallpaper.fpk.sha256
