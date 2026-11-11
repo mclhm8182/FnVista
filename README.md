@@ -5,7 +5,7 @@
 <h1 align="center">飞牛视野 · FnVista</h1>
 
 <p align="center">    
-  让飞牛 fnOS 的登录页与桌面背景每天自动换成 Bing 每日壁纸（4K 原图自动转码 WebP），  
+  让飞牛 fnOS 的桌面背景每天自动换成 Bing 每日壁纸（4K 原图自动转码 WebP），  
 
 并把你的照片也接入同一套「壁纸」体系——点一下即换、网页不断连，还能开启屏保轮播。
 
@@ -59,8 +59,8 @@
 
 ## 工作原理（简述）
 
-飞牛 fnOS 自研的 nginx 模块会监视登录页背景文件，一旦被覆盖就重启 nginx、造成网页「连接已断开」。  
-飞牛视野因此**绝不覆盖**该背景文件、也**绝不 reload nginx**，而是：
+飞牛 fnOS 会严密保护登录页背景文件：一旦被外部改写就会重启 nginx、并自动还原该文件，造成网页「连接已断开」。  
+飞牛视野因此**绝不改写**登录页背景、也**绝不 reload nginx**，而是把改动只落在桌面壁纸：
 
 - 桌面壁纸实际取自飞牛 `trim_sac` 的自定义壁纸行文件（不受监视）；
 - 点选 / 轮播 / 恢复一律走数据库指针回退 + 自定义壁纸文件；
@@ -141,7 +141,7 @@ curl -fsSL https://raw.githubusercontent.com/mclhm8182/FnVista/main/install.sh |
 与 [pengchujin/aerial-tv](https://github.com/pengchujin/aerial-tv)（壁纸轮播逻辑），  
 在其基础上改用 ffmpeg 转码、修正了 chattr 的处理方式，并加入 Bing 抓取、幂等控制、本地相册与多语言支持。
 
-Bing 每日壁纸版权归 Microsoft / 原作者所有，本项目仅抓取公开接口用于个人设备的登录页背景。
+Bing 每日壁纸版权归 Microsoft / 原作者所有，本项目仅抓取公开接口用于个人设备的桌面与屏保背景。
 
 ## 许可证
 

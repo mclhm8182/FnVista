@@ -5,7 +5,7 @@
 <h1 align="center">FnVista · Bing Wallpaper for fnOS</h1>
 
 <p align="center">
-  Automatically set your fnOS login page and desktop background to the Bing daily wallpaper every day<br>
+  Automatically set your fnOS desktop background to the Bing daily wallpaper every day<br>
   (4K original transcoded to WebP), and bring your own photos into the same wallpaper pool —<br>
   one click to apply, no page disconnect, plus a screensaver slideshow.
 </p>
@@ -58,8 +58,8 @@
 
 ## How it works (brief)
 
-fnOS's in-house nginx module watches the login-page background file and restarts nginx the moment it changes — disconnecting the web page (~11s).
-FnVista therefore **never overwrites** that file and **never reloads nginx**. Instead:
+fnOS tightly protects the login-page background file: if it is modified externally, nginx restarts and fnOS auto-restores the file — disconnecting the web page (~11s).
+FnVista therefore **never modifies** the login background and **never reloads nginx**. Instead, all changes are applied only to the desktop wallpaper:
 
 - The desktop wallpaper actually comes from fnOS `trim_sac`'s custom-wallpaper row file (not watched);
 - Selecting / rotating / restoring all go through a DB pointer rollback + custom wallpaper file;
@@ -139,7 +139,7 @@ Inspired by [playGitboy/fnOS_wallpaper_diy](https://github.com/playGitboy/fnOS_w
 and [pengchujin/aerial-tv](https://github.com/pengchujin/aerial-tv) (wallpaper rotation logic),
 extended with ffmpeg transcoding, corrected `chattr` handling, Bing fetching, idempotency, local albums and multilingual support.
 
-Bing daily wallpaper copyright belongs to Microsoft / the original authors; this project only fetches the public API for personal device backgrounds.
+Bing daily wallpaper copyright belongs to Microsoft / the original authors; this project only fetches the public API for personal device desktop and screensaver backgrounds.
 
 ## License
 
