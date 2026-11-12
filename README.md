@@ -139,6 +139,8 @@ curl -fsSL https://raw.githubusercontent.com/mclhm8182/FnVista/main/install.sh |
 与 [pengchujin/aerial-tv](https://github.com/pengchujin/aerial-tv)（壁纸轮播逻辑），  
 在其基础上改用 ffmpeg 转码、修正了 chattr 的处理方式，并加入 Bing 抓取、幂等控制、本地相册与多语言支持。
 
+脚本命名体系，以及 Bing 抓取 / ffmpeg 转码的结构，参考了 [pmxwxhn/fnos-bing-wallpaper](https://github.com/pmxwxhn/fnos-bing-wallpaper)（**MIT License，Copyright (c) 2026 pmxwxhn**）。本项目在此基础上重写为 fnOS 原生 FPK 应用，并改用「数据库指针 + trim_sac 自定义壁纸行文件」的零断连通道——不再依赖 `chattr` 锁 `wallpaper-1.webp`（飞牛会在数秒内自动还原该文件，锁不住），新增了网页 UI、屏保轮播、我的照片与多语言。依 MIT 协议保留其版权声明。
+
 Bing 每日壁纸版权归 Microsoft / 原作者所有，本项目仅抓取公开接口用于个人设备的桌面与屏保背景。
 
 ## 许可证

@@ -139,6 +139,13 @@ Inspired by [playGitboy/fnOS_wallpaper_diy](https://github.com/playGitboy/fnOS_w
 and [pengchujin/aerial-tv](https://github.com/pengchujin/aerial-tv) (wallpaper rotation logic),
 extended with ffmpeg transcoding, corrected `chattr` handling, Bing fetching, idempotency, local albums and multilingual support.
 
+The script naming scheme and the Bing-fetch / ffmpeg-transcode structure are derived from
+[pmxwxhn/fnos-bing-wallpaper](https://github.com/pmxwxhn/fnos-bing-wallpaper) (**MIT License, Copyright (c) 2026 pmxwxhn**).
+This project rewrites it as a native fnOS FPK app and switches to a "DB pointer + trim_sac custom-wallpaper row file"
+zero-disconnect channel — no longer relying on `chattr` to lock `wallpaper-1.webp` (fnOS auto-restores that file within seconds,
+so the lock cannot hold) — and adds a web UI, screensaver slideshow, My Photos and multilingual support.
+Its copyright notice is preserved here per the MIT License.
+
 Bing daily wallpaper copyright belongs to Microsoft / the original authors; this project only fetches the public API for personal device desktop and screensaver backgrounds.
 
 ## License
