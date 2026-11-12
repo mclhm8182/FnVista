@@ -31,6 +31,11 @@ cat > "$CRON_FILE" <<EOF
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 $m $h * * * root $DAILY_BIN >/dev/null 2>&1
+# 傍晚上补：Bing 当天新图约北京时间 08:00 后才翻上来（实测 14:00 仍未翻），
+# 早晨那次常抓到前一天的图；14:30 与 21:00 两次补抓确保本地当日的「每日精选」瓷砖
+# 当天就能出现，不再永远慢一天。（与 run_time 重复时无副作用：同日同图会判跳过）
+30 14 * * * root $DAILY_BIN >/dev/null 2>&1
+0 21 * * * root $DAILY_BIN >/dev/null 2>&1
 * * * * * root $WATCHDOG_BIN >/dev/null 2>&1
 ${rotate_line}
 EOF

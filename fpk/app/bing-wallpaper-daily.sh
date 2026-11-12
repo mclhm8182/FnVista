@@ -178,22 +178,22 @@ prune_old() {
 }
 
 # 兜底补齐「今日」一张：backfill 的归档窗口有时不含当天，确保「每日精选」始终含当日图。
+# 统一按 enddate（=本地当日）命名，与 backfill / 主流程一致。
 ensure_today() {
-  local today s ub ti co j
-  today="$(date +%Y%m%d)"
-  [ -f "$WALL_DIR/bing-$today.jpg" ] && return 0
+  local e ub ti co j
   j="$(fetch_meta 2>/dev/null)" || return 0
-  s="$(printf '%s' "$j" | sed -n 's/.*"startdate":"\([0-9]\{8\}\)".*/\1/p' | head -1)"
+  e="$(printf '%s' "$j" | sed -n 's/.*"enddate":"\([0-9]\{8\}\)".*/\1/p' | head -1)"
   ub="$(printf '%s' "$j" | sed -n 's/.*"urlbase":"\([^"]*\)".*/\1/p' | head -1)"
   ti="$(printf '%s' "$j" | sed -n 's/.*"title":"\([^"]*\)".*/\1/p' | head -1)"
   co="$(printf '%s' "$j" | sed -n 's/.*"copyright":"\([^"]*\)".*/\1/p' | head -1)"
-  [ -n "$s" ] && [ -n "$ub" ] || return 0
+  [ -n "$e" ] && [ -n "$ub" ] || return 0
+  [ -f "$WALL_DIR/bing-$e.jpg" ] && return 0
   URLBASE="$ub"; TITLE="$ti"; COPYRIGHT="$co"
-  TARGET="$WALL_DIR/bing-$s.jpg"
+  TARGET="$WALL_DIR/bing-$e.jpg"
   if download_today; then
-    log "ensure_today 补齐今日壁纸: bing-$s.jpg"
+    log "ensure_today 补齐当日壁纸: bing-$e.jpg"
   else
-    log "ensure_today 今日壁纸下载失败（稍后由每日/照片模式任务重试）"
+    log "ensure_today 当日壁纸下载失败（稍后由每日/照片模式任务重试）"
   fi
 }
 
@@ -336,15 +336,19 @@ fetch_meta() {
 JSON=$(fetch_meta) || { log "ERROR 无法获取 Bing 壁纸信息，本次跳过"; echo "无法获取 Bing 壁纸信息" >&2; exit 1; }
 
 STARTDATE=$(printf '%s' "$JSON"  | sed -n 's/.*"startdate":"\([0-9]\{8\}\)".*/\1/p' | head -1)
+# 每日精选按 Bing 的 enddate 命名（enddate 即本地当日日期，startdate 比本地晚一天）。
+# 此前主流程误用 startdate 命名，而 backfill 用 enddate 命名，导致同一张当天图被两个
+# 路径起了不同文件名，今日瓷砖永远落不到本地当天——这是「今天没更新」的根因之一。
+ENDDATE=$(printf '%s' "$JSON"    | sed -n 's/.*"enddate":"\([0-9]\{8\}\)".*/\1/p'   | head -1)
 URLBASE=$(printf '%s' "$JSON"    | sed -n 's/.*"urlbase":"\([^"]*\)".*/\1/p'                | head -1)
 COPYRIGHT=$(printf '%s' "$JSON"  | sed -n 's/.*"copyright":"\([^"]*\)".*/\1/p'              | head -1)
 TITLE=$(printf '%s' "$JSON"      | sed -n 's/.*"title":"\([^"]*\)".*/\1/p'                  | head -1)
 
-if [ -z "$STARTDATE" ] || [ -z "$URLBASE" ]; then
-  log "ERROR 元数据解析失败 startdate='$STARTDATE' urlbase='$URLBASE'"; exit 1
+if [ -z "$ENDDATE" ] || [ -z "$URLBASE" ]; then
+  log "ERROR 元数据解析失败 enddate='$ENDDATE' urlbase='$URLBASE'"; exit 1
 fi
 
-TARGET="$WALL_DIR/bing-$STARTDATE.jpg"
+TARGET="$WALL_DIR/bing-$ENDDATE.jpg"
 
 # ---------- 2. 照片模式：仅刷新缓存，不抢占桌面 ----------
 if ! bing_auto_on; then
@@ -365,11 +369,11 @@ fi
 
 # ---------- 3. 每日自动更新模式 ----------
 ALREADY=0
-if [ "$FORCE" -eq 0 ] && [ -f "$STATE_FILE" ] && [ "$(cat "$STATE_FILE" 2>/dev/null)" = "$STARTDATE" ]; then
+if [ "$FORCE" -eq 0 ] && [ -f "$STATE_FILE" ] && [ "$(cat "$STATE_FILE" 2>/dev/null)" = "$ENDDATE" ]; then
   ALREADY=1
 fi
 if [ "$ALREADY" -eq 1 ] && [ -f "$TARGET" ]; then
-  log "今日壁纸 ($STARTDATE) 已应用，跳过"
+  log "今日壁纸 ($ENDDATE) 已应用，跳过"
   echo "今日壁纸已应用（用 --force 可强制重设）"
   exit 0
 fi
@@ -403,8 +407,8 @@ fi
 
 if bash "$CHANGER" "$TARGET" >> "$LOG_FILE" 2>&1; then
   # 兜底情况下不写 last_startdate，确保次日仍会重试当日真实壁纸
-  [ "$USED_FALLBACK" -eq 0 ] && echo "$STARTDATE" > "$STATE_FILE"
-  log "OK 壁纸已更新为 $STARTDATE${USED_FALLBACK:+'（末次成功图兜底）'}"
+  [ "$USED_FALLBACK" -eq 0 ] && echo "$ENDDATE" > "$STATE_FILE"
+  log "OK 壁纸已更新为 $ENDDATE${USED_FALLBACK:+'（末次成功图兜底）'}"
   echo "壁纸已更新：${TITLE:-$COPYRIGHT}"
 else
   log "ERROR fnos-wallpaper-set.sh 执行失败，详见日志 $LOG_FILE"
